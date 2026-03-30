@@ -21,6 +21,8 @@ Go to the [Releases](https://github.com/boonkgim/openclaw-installer/releases/lat
 2. Run the installer and follow the prompts
 3. Launch OpenClaw Installer from the Start menu
 
+> **Note:** If upgrading, close the OpenClaw Installer app before running the new setup exe.
+
 ## Features
 
 - **One-click setup** — Installs Node.js, OpenClaw, and starts the gateway automatically
