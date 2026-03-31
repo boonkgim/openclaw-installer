@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # OpenClaw interactive CLI installer for macOS/Linux
+# Idempotent — safe to re-run to add/change providers without breaking existing setup
 # Usage: bash <(curl -fsSL https://raw.githubusercontent.com/boonkgim/openclaw-installer/main/install.sh)
 set -euo pipefail
 
@@ -8,7 +9,20 @@ echo "  OpenClaw Installer"
 echo "  ==================="
 echo ""
 
+STATE_DIR="$HOME/.openclaw"
+ENV_FILE="$STATE_DIR/.env"
+
 log() { echo "[openclaw] $*"; }
+
+# Load existing .env values (if any)
+declare -A EXISTING_KEYS
+if [[ -f "$ENV_FILE" ]]; then
+  while IFS='=' read -r key value; do
+    key=$(echo "$key" | tr -d '[:space:]')
+    [[ -z "$key" || "$key" == \#* ]] && continue
+    EXISTING_KEYS["$key"]="$value"
+  done < "$ENV_FILE"
+fi
 
 # -- 1. Check / install Node.js >= 22 --------------------------------
 log "Checking for Node.js >= 22..."
@@ -23,7 +37,6 @@ if $NEED_NODE; then
   if ! command -v brew &>/dev/null; then
     log "Installing Homebrew (will also install Xcode Command Line Tools)..."
     NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-    # Add brew to PATH for Apple Silicon
     if [[ -f /opt/homebrew/bin/brew ]]; then
       eval "$(/opt/homebrew/bin/brew shellenv)"
     fi
@@ -36,27 +49,45 @@ log "Node.js $(node -v) OK"
 
 # -- 2. Collect API keys interactively --------------------------------
 echo ""
-echo "  Configure AI Providers (press Enter to skip any)"
+echo "  Configure AI Providers"
+echo "  Press Enter to keep existing value, or type new key to replace"
 echo "  -------------------------------------------------"
 echo ""
 
-read -rp "  Anthropic API Key: " ANTHROPIC_KEY
-read -rp "  Google Gemini API Key: " GEMINI_KEY
-read -rp "  OpenAI API Key: " OPENAI_KEY
-read -rp "  xAI API Key: " XAI_KEY
-read -rp "  OpenRouter API Key: " OPENROUTER_KEY
+prompt_key() {
+  local label="$1" env_key="$2"
+  local existing="${EXISTING_KEYS[$env_key]:-}"
+  local hint=""
+  if [[ -n "$existing" ]]; then
+    local masked="${existing: -4}"
+    hint=" [current: ...${masked}]"
+  fi
+  read -rp "  ${label}${hint}: " input
+  if [[ -n "$input" ]]; then
+    echo "$input"
+  else
+    echo "$existing"
+  fi
+}
 
-if [[ -z "$ANTHROPIC_KEY" && -z "$GEMINI_KEY" && -z "$OPENAI_KEY" && -z "$XAI_KEY" && -z "$OPENROUTER_KEY" ]]; then
-  echo ""
-  log "WARNING: No API keys provided. You can add them later in ~/.openclaw/.env"
+ANTHROPIC_KEY=$(prompt_key "Anthropic API Key" "ANTHROPIC_API_KEY")
+GEMINI_KEY=$(prompt_key "Google Gemini API Key" "GEMINI_API_KEY")
+OPENAI_KEY=$(prompt_key "OpenAI API Key" "OPENAI_API_KEY")
+XAI_KEY=$(prompt_key "xAI API Key" "XAI_API_KEY")
+OPENROUTER_KEY=$(prompt_key "OpenRouter API Key" "OPENROUTER_API_KEY")
+
+# -- 3. Preserve or generate gateway token ----------------------------
+GATEWAY_TOKEN="${EXISTING_KEYS[OPENCLAW_GATEWAY_TOKEN]:-}"
+if [[ -z "$GATEWAY_TOKEN" ]]; then
+  GATEWAY_TOKEN=$(openssl rand -hex 32)
+  log "Generated new gateway token"
+else
+  log "Using existing gateway token"
 fi
 
-# -- 3. Generate gateway token & create state directory ---------------
-GATEWAY_TOKEN=$(openssl rand -hex 32)
-STATE_DIR="$HOME/.openclaw"
 mkdir -p "$STATE_DIR/workspace"
 
-ENV_FILE="$STATE_DIR/.env"
+# Write .env (preserves gateway token, updates only changed keys)
 cat > "$ENV_FILE" <<EOF
 OPENCLAW_GATEWAY_TOKEN=$GATEWAY_TOKEN
 EOF
@@ -67,13 +98,13 @@ EOF
 [[ -n "$OPENROUTER_KEY" ]] && echo "OPENROUTER_API_KEY=$OPENROUTER_KEY" >> "$ENV_FILE"
 chmod 600 "$ENV_FILE"
 
-# -- 4. Install OpenClaw via npm --------------------------------------
+# -- 4. Install / update OpenClaw via npm -----------------------------
 echo ""
 log "Installing OpenClaw globally via npm..."
 npm install -g openclaw@latest
 log "OpenClaw installed: $(openclaw --version 2>/dev/null || echo 'ok')"
 
-# -- 5. Run onboarding ------------------------------------------------
+# -- 5. Run onboarding (skips if already onboarded) -------------------
 log "Running onboard..."
 openclaw onboard --install-daemon --non-interactive --accept-risk 2>&1 || true
 
@@ -102,8 +133,8 @@ openclaw completion --install --yes 2>&1 || true
 # -- 9. Start the gateway --------------------------------------------
 log "Installing gateway service..."
 openclaw gateway install 2>&1 || true
-log "Starting gateway..."
-openclaw gateway start 2>&1 || true
+log "Restarting gateway..."
+openclaw gateway restart 2>&1 || true
 
 # -- 10. Wait for gateway ---------------------------------------------
 log "Waiting for gateway to be ready..."
@@ -113,7 +144,6 @@ for i in $(seq 1 30); do
     log "Gateway is ready!"
     echo ""
     echo "  Dashboard: http://127.0.0.1:18789/"
-    echo "  Gateway Token: $GATEWAY_TOKEN"
     echo "  Config: $ENV_FILE"
     echo ""
     exit 0
@@ -124,7 +154,6 @@ done
 echo ""
 log "Gateway may still be starting. Check http://127.0.0.1:18789/"
 echo ""
-echo "  Gateway Token: $GATEWAY_TOKEN"
 echo "  Config: $ENV_FILE"
 echo ""
 exit 0
