@@ -2,6 +2,23 @@
 
 One-click installer for [OpenClaw](https://openclaw.ai).
 
+## Prerequisites
+
+**macOS:**
+```bash
+xcode-select --install                    # Xcode Command Line Tools
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"  # Homebrew
+brew install node@22                      # Node.js
+```
+
+**Windows (PowerShell):**
+```powershell
+Set-ExecutionPolicy -Scope CurrentUser RemoteSigned   # allow npm/openclaw scripts (one-time)
+winget install OpenJS.NodeJS.LTS                      # Node.js
+```
+
+> The CLI installer below will install Node.js automatically if missing — these are only needed if you prefer to install manually or want to use `openclaw` commands directly.
+
 ## Quick Install (CLI)
 
 **macOS / Linux:**
@@ -10,12 +27,6 @@ bash <(curl -fsSL https://raw.githubusercontent.com/boonkgim/openclaw-installer/
 ```
 
 **Windows (PowerShell):**
-
-> **First time?** Run this once to allow npm/openclaw scripts:
-> ```powershell
-> Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
-> ```
-
 ```powershell
 irm https://raw.githubusercontent.com/boonkgim/openclaw-installer/main/install.ps1 -OutFile $env:TEMP\install.ps1; powershell -ExecutionPolicy Bypass -File $env:TEMP\install.ps1
 ```
