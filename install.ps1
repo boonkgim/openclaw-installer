@@ -1,6 +1,6 @@
 # OpenClaw interactive CLI installer for Windows
 # Idempotent -- safe to re-run to add/change providers without breaking existing setup
-# Usage: irm https://raw.githubusercontent.com/boonkgim/openclaw-installer/main/install.ps1 -OutFile $env:TEMP\install.ps1; & $env:TEMP\install.ps1
+# Usage: irm https://raw.githubusercontent.com/boonkgim/openclaw-installer/main/install.ps1 -OutFile $env:TEMP\install.ps1; powershell -ExecutionPolicy Bypass -File $env:TEMP\install.ps1
 $ErrorActionPreference = "Stop"
 
 Write-Host ""
