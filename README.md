@@ -10,6 +10,12 @@ bash <(curl -fsSL https://raw.githubusercontent.com/boonkgim/openclaw-installer/
 ```
 
 **Windows (PowerShell):**
+
+> **First time?** Run this once to allow npm/openclaw scripts:
+> ```powershell
+> Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
+> ```
+
 ```powershell
 irm https://raw.githubusercontent.com/boonkgim/openclaw-installer/main/install.ps1 -OutFile $env:TEMP\install.ps1; powershell -ExecutionPolicy Bypass -File $env:TEMP\install.ps1
 ```
