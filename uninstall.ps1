@@ -1,6 +1,7 @@
 # OpenClaw CLI uninstaller for Windows
 # Usage: irm https://raw.githubusercontent.com/boonkgim/openclaw-installer/main/uninstall.ps1 -OutFile $env:TEMP\uninstall.ps1; powershell -ExecutionPolicy Bypass -File $env:TEMP\uninstall.ps1
 $ErrorActionPreference = "SilentlyContinue"
+Set-ExecutionPolicy -Scope Process Bypass -Force
 $StateDir = "$env:USERPROFILE\.openclaw"
 
 function Log($msg) { Write-Host "[openclaw] $msg" }
