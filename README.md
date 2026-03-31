@@ -8,7 +8,7 @@ One-click installer for [OpenClaw](https://openclaw.ai).
 ```bash
 xcode-select --install                    # Xcode Command Line Tools
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"  # Homebrew
-brew install node@22                      # Node.js
+brew install node@24                      # Node.js
 ```
 
 **Windows (PowerShell):**
