@@ -35,28 +35,39 @@ try {
 } catch { }
 
 if ($needNode) {
-    Log "Installing Node.js 22 via winget..."
-    $wingetOk = $false
-    try {
-        winget install OpenJS.NodeJS.LTS --accept-source-agreements --accept-package-agreements --silent
-        if ($LASTEXITCODE -eq 0) { $wingetOk = $true }
-    } catch { }
+    # Check if nvm-windows is managing Node.js
+    $hasNvm = (Get-Command nvm -ErrorAction SilentlyContinue) -ne $null
+    if ($hasNvm) {
+        Log "nvm detected. Installing Node.js 22 via nvm..."
+        nvm install 22
+        nvm use 22
+    } else {
+        Log "Installing Node.js 22 via winget..."
+        $wingetOk = $false
+        try {
+            winget install OpenJS.NodeJS.LTS --accept-source-agreements --accept-package-agreements --silent --force
+            if ($LASTEXITCODE -eq 0) { $wingetOk = $true }
+        } catch { }
 
-    if (-not $wingetOk) {
-        Log "winget failed (may need admin rights), trying direct download..."
-        $nodeUrl = "https://nodejs.org/dist/v22.16.0/node-v22.16.0-x64.msi"
-        $installer = "$env:TEMP\node-installer.msi"
-        Invoke-WebRequest -Uri $nodeUrl -OutFile $installer
-        Start-Process msiexec.exe -ArgumentList "/i `"$installer`" /qn" -Verb RunAs -Wait
-        Remove-Item $installer -Force
+        if (-not $wingetOk) {
+            Log "winget failed, trying direct download..."
+            $nodeUrl = "https://nodejs.org/dist/v22.16.0/node-v22.16.0-x64.msi"
+            $installer = "$env:TEMP\node-installer.msi"
+            Invoke-WebRequest -Uri $nodeUrl -OutFile $installer
+            Start-Process msiexec.exe -ArgumentList "/i `"$installer`" /qn" -Verb RunAs -Wait
+            Remove-Item $installer -Force -ErrorAction SilentlyContinue
+        }
     }
 
+    # Refresh PATH
     $env:PATH = [System.Environment]::GetEnvironmentVariable("PATH", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("PATH", "User")
 
     try {
         $null = node -v
     } catch {
-        Log "ERROR: Node.js installation failed. Please install Node.js 22+ manually from https://nodejs.org/"
+        Log "ERROR: Node.js installation failed. Please install Node.js 22+ manually:"
+        if ($hasNvm) { Log "  nvm install 22 && nvm use 22" }
+        else { Log "  Download from https://nodejs.org/" }
         Log "Then re-run this installer."
         exit 1
     }
