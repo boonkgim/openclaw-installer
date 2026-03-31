@@ -20,14 +20,17 @@ if command -v node &>/dev/null; then
   fi
 fi
 if $NEED_NODE; then
-  if command -v brew &>/dev/null; then
-    log "Installing Node.js 22 via Homebrew..."
-    brew install node@22
-    brew link --overwrite node@22 2>/dev/null || true
-  else
-    log "ERROR: Node.js >= 22 is required. Install it from https://nodejs.org/"
-    exit 1
+  if ! command -v brew &>/dev/null; then
+    log "Installing Homebrew (will also install Xcode Command Line Tools)..."
+    NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+    # Add brew to PATH for Apple Silicon
+    if [[ -f /opt/homebrew/bin/brew ]]; then
+      eval "$(/opt/homebrew/bin/brew shellenv)"
+    fi
   fi
+  log "Installing Node.js 22 via Homebrew..."
+  brew install node@22
+  brew link --overwrite node@22 2>/dev/null || true
 fi
 log "Node.js $(node -v) OK"
 
