@@ -36,17 +36,30 @@ try {
 
 if ($needNode) {
     Log "Installing Node.js 22 via winget..."
+    $wingetOk = $false
     try {
         winget install OpenJS.NodeJS.LTS --accept-source-agreements --accept-package-agreements --silent
-    } catch {
-        Log "winget failed, trying direct download..."
+        if ($LASTEXITCODE -eq 0) { $wingetOk = $true }
+    } catch { }
+
+    if (-not $wingetOk) {
+        Log "winget failed (may need admin rights), trying direct download..."
         $nodeUrl = "https://nodejs.org/dist/v22.16.0/node-v22.16.0-x64.msi"
         $installer = "$env:TEMP\node-installer.msi"
         Invoke-WebRequest -Uri $nodeUrl -OutFile $installer
-        Start-Process msiexec.exe -ArgumentList "/i `"$installer`" /qn" -Wait
+        Start-Process msiexec.exe -ArgumentList "/i `"$installer`" /qn" -Verb RunAs -Wait
         Remove-Item $installer -Force
     }
+
     $env:PATH = [System.Environment]::GetEnvironmentVariable("PATH", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("PATH", "User")
+
+    try {
+        $null = node -v
+    } catch {
+        Log "ERROR: Node.js installation failed. Please install Node.js 22+ manually from https://nodejs.org/"
+        Log "Then re-run this installer."
+        exit 1
+    }
 }
 Log "Node.js $(node -v) OK"
 
