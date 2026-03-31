@@ -11,7 +11,7 @@ bash <(curl -fsSL https://raw.githubusercontent.com/boonkgim/openclaw-installer/
 
 **Windows (PowerShell):**
 ```powershell
-irm https://raw.githubusercontent.com/boonkgim/openclaw-installer/main/install.ps1 -OutFile $env:TEMP\install.ps1; & $env:TEMP\install.ps1
+irm https://raw.githubusercontent.com/boonkgim/openclaw-installer/main/install.ps1 -OutFile $env:TEMP\install.ps1; powershell -ExecutionPolicy Bypass -File $env:TEMP\install.ps1
 ```
 
 Safe to re-run — preserves your gateway token and existing API keys.
@@ -25,7 +25,7 @@ bash <(curl -fsSL https://raw.githubusercontent.com/boonkgim/openclaw-installer/
 
 **Windows (PowerShell):**
 ```powershell
-irm https://raw.githubusercontent.com/boonkgim/openclaw-installer/main/uninstall.ps1 -OutFile $env:TEMP\uninstall.ps1; & $env:TEMP\uninstall.ps1
+irm https://raw.githubusercontent.com/boonkgim/openclaw-installer/main/uninstall.ps1 -OutFile $env:TEMP\uninstall.ps1; powershell -ExecutionPolicy Bypass -File $env:TEMP\uninstall.ps1
 ```
 
 ## GUI Installer
