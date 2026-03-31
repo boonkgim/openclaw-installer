@@ -3,6 +3,11 @@
 # Usage: irm https://raw.githubusercontent.com/boonkgim/openclaw-installer/main/install.ps1 -OutFile $env:TEMP\install.ps1; powershell -ExecutionPolicy Bypass -File $env:TEMP\install.ps1
 $ErrorActionPreference = "Stop"
 
+# Allow .ps1 wrappers (npm.ps1, openclaw.ps1, etc.) to run in this session.
+# Without this, default Restricted policy blocks npm/openclaw commands even
+# though the installer itself was launched with -ExecutionPolicy Bypass.
+Set-ExecutionPolicy -Scope Process Bypass -Force
+
 Write-Host ""
 Write-Host "  OpenClaw Installer"
 Write-Host "  ==================="
