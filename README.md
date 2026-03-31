@@ -2,14 +2,24 @@
 
 One-click installer for [OpenClaw](https://openclaw.ai).
 
-## Download
+## Quick Install (CLI)
 
-Go to the [Releases](https://github.com/boonkgim/openclaw-installer/releases/latest) page and download the installer for your platform:
+**macOS / Linux:**
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/boonkgim/openclaw-installer/main/install.sh)
+```
+
+**Windows (PowerShell):**
+```powershell
+irm https://raw.githubusercontent.com/boonkgim/openclaw-installer/main/install.ps1 -OutFile $env:TEMP\install.ps1; & $env:TEMP\install.ps1
+```
+
+## GUI Installer
+
+Go to the [Releases](https://github.com/boonkgim/openclaw-installer/releases/latest) page and download:
 
 - **macOS** — `OpenClaw Installer-x.x.x-universal.dmg`
 - **Windows** — `OpenClaw Installer Setup x.x.x.exe`
-
-## Installation
 
 ### macOS
 1. Download the `.dmg` file
