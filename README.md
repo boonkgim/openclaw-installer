@@ -14,6 +14,20 @@ bash <(curl -fsSL https://raw.githubusercontent.com/boonkgim/openclaw-installer/
 irm https://raw.githubusercontent.com/boonkgim/openclaw-installer/main/install.ps1 -OutFile $env:TEMP\install.ps1; & $env:TEMP\install.ps1
 ```
 
+Safe to re-run — preserves your gateway token and existing API keys.
+
+## Uninstall (CLI)
+
+**macOS / Linux:**
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/boonkgim/openclaw-installer/main/uninstall.sh)
+```
+
+**Windows (PowerShell):**
+```powershell
+irm https://raw.githubusercontent.com/boonkgim/openclaw-installer/main/uninstall.ps1 -OutFile $env:TEMP\uninstall.ps1; & $env:TEMP\uninstall.ps1
+```
+
 ## GUI Installer
 
 Go to the [Releases](https://github.com/boonkgim/openclaw-installer/releases/latest) page and download:
@@ -21,17 +35,7 @@ Go to the [Releases](https://github.com/boonkgim/openclaw-installer/releases/lat
 - **macOS** — `OpenClaw Installer-x.x.x-universal.dmg`
 - **Windows** — `OpenClaw Installer Setup x.x.x.exe`
 
-### macOS
-1. Download the `.dmg` file
-2. Open it and drag the app to your Applications folder
-3. Launch OpenClaw Installer from Applications
-
-### Windows
-1. Download the `.exe` file
-2. Run the installer and follow the prompts
-3. Launch OpenClaw Installer from the Start menu
-
-> **Note:** If upgrading, close the OpenClaw Installer app before running the new setup exe.
+> **Note:** Windows exe is unsigned. If Smart App Control blocks it, use the CLI install above instead.
 
 ## Features
 
