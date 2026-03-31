@@ -1,4 +1,5 @@
 # OpenClaw interactive CLI installer for Windows
+# Idempotent -- safe to re-run to add/change providers without breaking existing setup
 # Usage: irm https://raw.githubusercontent.com/boonkgim/openclaw-installer/main/install.ps1 -OutFile $env:TEMP\install.ps1; & $env:TEMP\install.ps1
 $ErrorActionPreference = "Stop"
 
@@ -7,7 +8,22 @@ Write-Host "  OpenClaw Installer"
 Write-Host "  ==================="
 Write-Host ""
 
+$StateDir = "$env:USERPROFILE\.openclaw"
+$EnvFile = "$StateDir\.env"
+
 function Log($msg) { Write-Host "[openclaw] $msg" }
+
+# Load existing .env values (if any)
+$existingKeys = @{}
+if (Test-Path $EnvFile) {
+    Get-Content $EnvFile | ForEach-Object {
+        $line = $_.Trim()
+        if ($line -and -not $line.StartsWith('#') -and $line.Contains('=')) {
+            $parts = $line -split '=', 2
+            $existingKeys[$parts[0].Trim()] = $parts[1]
+        }
+    }
+}
 
 # -- 1. Check / install Node.js >= 22 --------------------------------
 Log "Checking for Node.js >= 22..."
@@ -36,41 +52,57 @@ Log "Node.js $(node -v) OK"
 
 # -- 2. Collect API keys interactively --------------------------------
 Write-Host ""
-Write-Host "  Configure AI Providers (press Enter to skip any)"
+Write-Host "  Configure AI Providers"
+Write-Host "  Press Enter to keep existing value, or type new key to replace"
 Write-Host "  -------------------------------------------------"
 Write-Host ""
 
-$anthropicKey  = Read-Host "  Anthropic API Key"
-$geminiKey     = Read-Host "  Google Gemini API Key"
-$openaiKey     = Read-Host "  OpenAI API Key"
-$xaiKey        = Read-Host "  xAI API Key"
-$openrouterKey = Read-Host "  OpenRouter API Key"
-
-if (-not $anthropicKey -and -not $geminiKey -and -not $openaiKey -and -not $xaiKey -and -not $openrouterKey) {
-    Write-Host ""
-    Log "WARNING: No API keys provided. You can add them later in ~/.openclaw/.env"
+function Prompt-Key {
+    param([string]$Label, [string]$EnvKey)
+    $existing = $existingKeys[$EnvKey]
+    $hint = ""
+    if ($existing) {
+        $masked = $existing.Substring([Math]::Max(0, $existing.Length - 4))
+        $hint = " [current: ...$masked]"
+    }
+    $input = Read-Host "  $Label$hint"
+    if ($input) { return $input }
+    return $existing
 }
 
-# -- 3. Generate gateway token & create state directory ---------------
-$gatewayToken = -join ((1..32) | ForEach-Object { '{0:x2}' -f (Get-Random -Maximum 256) })
-$stateDir = "$env:USERPROFILE\.openclaw"
-New-Item -ItemType Directory -Force -Path "$stateDir\workspace" | Out-Null
+$anthropicKey  = Prompt-Key -Label "Anthropic API Key" -EnvKey "ANTHROPIC_API_KEY"
+$geminiKey     = Prompt-Key -Label "Google Gemini API Key" -EnvKey "GEMINI_API_KEY"
+$openaiKey     = Prompt-Key -Label "OpenAI API Key" -EnvKey "OPENAI_API_KEY"
+$xaiKey        = Prompt-Key -Label "xAI API Key" -EnvKey "XAI_API_KEY"
+$openrouterKey = Prompt-Key -Label "OpenRouter API Key" -EnvKey "OPENROUTER_API_KEY"
 
+# -- 3. Preserve or generate gateway token ----------------------------
+$gatewayToken = $existingKeys["OPENCLAW_GATEWAY_TOKEN"]
+if (-not $gatewayToken) {
+    $gatewayToken = -join ((1..32) | ForEach-Object { '{0:x2}' -f (Get-Random -Maximum 256) })
+    Log "Generated new gateway token"
+} else {
+    Log "Using existing gateway token"
+}
+
+New-Item -ItemType Directory -Force -Path "$StateDir\workspace" | Out-Null
+
+# Write .env (preserves gateway token, updates only changed keys)
 $envContent = "OPENCLAW_GATEWAY_TOKEN=$gatewayToken`n"
 if ($anthropicKey)  { $envContent += "ANTHROPIC_API_KEY=$anthropicKey`n" }
 if ($geminiKey)     { $envContent += "GEMINI_API_KEY=$geminiKey`n" }
 if ($openaiKey)     { $envContent += "OPENAI_API_KEY=$openaiKey`n" }
 if ($xaiKey)        { $envContent += "XAI_API_KEY=$xaiKey`n" }
 if ($openrouterKey) { $envContent += "OPENROUTER_API_KEY=$openrouterKey`n" }
-Set-Content -Path "$stateDir\.env" -Value $envContent -Encoding UTF8
+Set-Content -Path $EnvFile -Value $envContent -Encoding UTF8
 
-# -- 4. Install OpenClaw via npm --------------------------------------
+# -- 4. Install / update OpenClaw via npm -----------------------------
 Write-Host ""
 Log "Installing OpenClaw globally via npm..."
 npm install -g openclaw@latest
 Log "OpenClaw installed"
 
-# -- 5. Run onboarding ------------------------------------------------
+# -- 5. Run onboarding (skips if already onboarded) -------------------
 Log "Running onboard..."
 try { & openclaw onboard --install-daemon --non-interactive --accept-risk 2>&1 } catch { }
 
@@ -99,8 +131,8 @@ try { & openclaw completion --install --yes 2>&1 } catch { }
 # -- 9. Start the gateway --------------------------------------------
 Log "Installing gateway service..."
 try { & openclaw gateway install 2>&1 } catch { }
-Log "Starting gateway..."
-try { & openclaw gateway start 2>&1 } catch { }
+Log "Restarting gateway..."
+try { & openclaw gateway restart 2>&1 } catch { }
 
 # -- 10. Wait for gateway ---------------------------------------------
 Log "Waiting for gateway to be ready..."
@@ -124,6 +156,5 @@ if ($ready) {
 }
 Write-Host ""
 Write-Host "  Dashboard: http://127.0.0.1:18789/"
-Write-Host "  Gateway Token: $gatewayToken"
-Write-Host "  Config: $stateDir\.env"
+Write-Host "  Config: $EnvFile"
 Write-Host ""
