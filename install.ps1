@@ -152,11 +152,48 @@ if ($defaultModel) {
 # -- 8. Install shell completion --------------------------------------
 try { & openclaw completion --install --yes 2>&1 } catch { }
 
-# -- 9. Start the gateway --------------------------------------------
+# -- 9. Start the gateway (hidden — no visible console window) --------
 Log "Installing gateway service..."
 try { & openclaw gateway install 2>&1 } catch { }
+
+# Fix startup entry: replace "start /min" with fully-hidden VBS launcher
+$startupDir = "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Startup"
+$startupCmd = "$startupDir\OpenClaw Gateway.cmd"
+$gatewayCmd = "$StateDir\gateway.cmd"
+$launcherVbs = "$StateDir\gateway-launcher.vbs"
+
+if (Test-Path $gatewayCmd) {
+    # VBS launcher runs gateway.cmd with window style 0 (hidden)
+    Set-Content -Path $launcherVbs -Value @"
+Set WshShell = CreateObject("WScript.Shell")
+WshShell.Run """$gatewayCmd""", 0, False
+"@ -Encoding ASCII
+
+    if (Test-Path $startupCmd) {
+        Set-Content -Path $startupCmd -Value @"
+@echo off
+wscript.exe "$launcherVbs"
+"@ -Encoding ASCII
+    }
+}
+
+# Stop existing gateway, then start hidden via gateway.cmd
 Log "Restarting gateway..."
-try { & openclaw gateway restart 2>&1 } catch { }
+try { & openclaw gateway stop 2>&1 } catch { }
+Start-Sleep -Seconds 1
+
+if (Test-Path $gatewayCmd) {
+    $psi = New-Object System.Diagnostics.ProcessStartInfo
+    $psi.FileName = "cmd.exe"
+    $psi.Arguments = "/c `"$gatewayCmd`""
+    $psi.UseShellExecute = $false
+    $psi.CreateNoWindow = $true
+    $psi.WorkingDirectory = $StateDir
+    [System.Diagnostics.Process]::Start($psi) | Out-Null
+} else {
+    # Fallback if gateway.cmd doesn't exist yet
+    try { & openclaw gateway start 2>&1 } catch { }
+}
 
 # -- 10. Wait for gateway ---------------------------------------------
 Log "Waiting for gateway to be ready..."
