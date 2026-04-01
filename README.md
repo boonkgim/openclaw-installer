@@ -60,6 +60,8 @@ Go to the [Releases](https://github.com/boonkgim/openclaw-installer/releases/lat
 - **Multi-provider support** — Configure API keys for Anthropic, OpenAI, Google Gemini, xAI, OpenRouter, and Vercel AI Gateway
 - **OAuth authentication** — OpenAI Codex OAuth 2.0 + PKCE browser login with auto-refresh
 - **Anthropic auth options** — API key, setup token, or Claude CLI backend credential reuse
-- **Auto-register models** — Discovers and registers all available models from each configured provider
+- **Auto-register models** — Discovers and registers all available models from each configured provider (including catalog lookup for OAuth providers)
 - **Built-in management** — Update, repair, restart, or uninstall OpenClaw from the app
 - **Environment editor** — View and edit `.env` configuration directly in the app
+- **Exec approval defaults** — New installs skip repetitive permission prompts automatically
+- **Provider persistence** — Configured providers (including Claude CLI backend) persist across app restarts
